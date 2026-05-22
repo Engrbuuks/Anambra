@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INEC IReV Results Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #16a34a; --green-light: #dcfce7;
+  --amber: #d97706; --amber-light: #fef3c7;
+  --navy: #0f2d5e; --navy-mid: #1e4080; --navy-light: #e8eef8;
+  --text: #111827; --text-muted: #6b7280;
+  --border: #e5e7eb; --surface: #f9fafb; --white: #ffffff;
+  --radius: 10px; --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+body { font-family: 'DM Sans', sans-serif; background: #f1f5f9; color: var(--text); font-size: 14px; min-height: 100vh; }
+
+/* ── HEADER ── */
+.header {
+  background: var(--navy); padding: 0 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px; position: sticky; top: 0; z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.header-logo {
+  width: 32px; height: 32px; min-width: 32px; background: #fff;
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: var(--navy);
+}
+.header-title { color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.header-subtitle { color: rgba(255,255,255,0.55); font-size: 11px; white-space: nowrap; }
+.header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.live-pill {
+  background: var(--green); color: #fff; font-size: 11px; font-weight: 600;
+  padding: 3px 9px; border-radius: 99px; display: flex; align-items: center; gap: 4px;
+}
+.live-dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.sync-info { color: rgba(255,255,255,0.5); font-size: 11px; }
+
+/* ── MAIN ── */
+.main { max-width: 1280px; margin: 0 auto; padding: 16px 12px 32px; }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group.wide { grid-column: 1 / -1; }
+.filter-group.actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; flex-direction: row; }
+.filter-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+select, .filter-input {
+  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--surface);
+  color: var(--text); width: 100%; cursor: pointer; outline: none;
+  transition: border-color 0.15s;
+}
+select:focus, .filter-input:focus { border-color: var(--navy-mid); box-shadow: 0 0 0 2px rgba(15,45,94,0.1); }
+
+.btn {
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  padding: 8px 16px; border: none; border-radius: var(--radius-sm);
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.15s; white-space: nowrap;
+}
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--navy-mid); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-outline { background: transparent; color: var(--navy); border: 1px solid var(--navy); font-weight: 500; }
+.btn-outline:hover { background: var(--navy-light); }
+
+/* ── STATS ── */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 10px; margin-bottom: 16px;
+}
+.stat-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px;
+  box-shadow: var(--shadow);
+}
+.stat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin-bottom: 8px; }
+.stat-icon.blue { background: var(--navy-light); }
+.stat-icon.green { background: var(--green-light); }
+.stat-icon.amber { background: var(--amber-light); }
+.stat-label { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-val { font-size: 22px; font-weight: 600; line-height: 1.1; font-family: 'DM Mono', monospace; }
+.stat-val.blue { color: var(--navy); }
+.stat-val.green { color: var(--green); }
+.stat-val.amber { color: var(--amber); }
+.stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── PROGRESS ── */
+.progress-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.progress-head { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; }
+.progress-title { font-size: 13px; font-weight: 600; }
+.progress-pct { font-size: 13px; font-weight: 700; color: var(--navy); font-family: 'DM Mono', monospace; }
+.progress-track { background: var(--surface); border-radius: 99px; height: 8px; overflow: hidden; border: 1px solid var(--border); }
+.progress-fill { background: var(--navy); height: 100%; border-radius: 99px; transition: width 0.8s ease; }
+.progress-labels { display: flex; justify-content: space-between; margin-top: 5px; }
+.progress-labels span { font-size: 11px; color: var(--text-muted); }
+
+/* ── TABLE CARD ── */
+.table-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.table-topbar {
+  padding: 10px 14px;
+  display: flex; flex-wrap: wrap; gap: 8px;
+  justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.table-topbar-title { font-size: 13px; font-weight: 600; }
+.table-topbar-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.search-wrap { position: relative; }
+.search-wrap input {
+  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  padding: 7px 10px 7px 30px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--surface);
+  color: var(--text); width: 180px; outline: none;
+  transition: border-color 0.15s;
+}
+.search-wrap input:focus { border-color: var(--navy-mid); }
+.search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px; pointer-events: none; }
+
+/* ── TABLE ── */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; min-width: 480px; }
+thead { background: var(--surface); border-bottom: 1px solid var(--border); }
+th {
+  padding: 9px 12px; font-size: 10px; font-weight: 700;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+  text-align: left; white-space: nowrap;
+}
+td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f8fafc; }
+.td-lga { font-weight: 500; }
+.td-muted { color: var(--text-muted); font-size: 12px; }
+.td-code { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+.pill-ok { background: var(--green-light); color: #15803d; }
+.pill-wait { background: var(--amber-light); color: #92400e; }
+.view-btn {
+  font-size: 12px; font-weight: 500; color: var(--navy); text-decoration: none;
+  padding: 4px 10px; border: 1px solid var(--navy-light);
+  border-radius: var(--radius-sm); background: var(--navy-light);
+  cursor: pointer; display: inline-block; transition: background 0.1s; white-space: nowrap;
+}
+.view-btn:hover { background: #d0dcf0; }
+
+/* ── PAGINATION ── */
+.pagination {
+  padding: 10px 14px; display: flex; flex-wrap: wrap;
+  justify-content: space-between; align-items: center;
+  border-top: 1px solid var(--border); gap: 8px;
+}
+.pagination-info { font-size: 12px; color: var(--text-muted); }
+.page-btns { display: flex; gap: 3px; flex-wrap: wrap; }
+.page-btn {
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+  padding: 5px 9px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--white);
+  color: var(--text); cursor: pointer; transition: all 0.1s;
+}
+.page-btn:hover { background: var(--surface); }
+.page-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.page-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── STATES ── */
+.state-box { padding: 48px 20px; text-align: center; color: var(--text-muted); }
+.state-box .icon { font-size: 32px; margin-bottom: 12px; }
+.state-box h3 { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.state-box p { font-size: 13px; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 14px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── MODAL ── */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999; align-items: center; justify-content: center; padding: 16px; }
+.modal-bg.open { display: flex; }
+.modal { background: var(--white); border-radius: var(--radius); overflow: hidden; width: 100%; max-width: 700px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 60px rgba(0,0,0,0.4); }
+.modal-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--surface); }
+.modal-title { font-size: 13px; font-weight: 600; }
+.modal-close { cursor: pointer; font-size: 20px; color: var(--text-muted); background: none; border: none; line-height: 1; padding: 4px; }
+.modal-body { overflow: auto; flex: 1; }
+.modal-body img { display: block; max-width: 100%; height: auto; }
+.img-loading { padding: 40px; text-align: center; color: var(--text-muted); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 16px; right: 16px; left: 16px;
+  background: var(--navy); color: #fff; padding: 12px 16px;
+  border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  opacity: 0; transform: translateY(10px); transition: all 0.3s;
+  pointer-events: none; z-index: 9999; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── ACTIVE FILTER CHIPS ── */
+.active-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--navy-light); color: var(--navy);
+  font-size: 12px; font-weight: 500; padding: 4px 10px;
+  border-radius: 99px; border: 1px solid rgba(15,45,94,0.15);
+}
+.filter-chip button { background: none; border: none; cursor: pointer; color: var(--navy); font-size: 14px; line-height: 1; padding: 0; }
+
+/* ── TABLET ── */
+@media (min-width: 600px) {
+  .main { padding: 20px 16px 40px; }
+  .filter-bar { grid-template-columns: 1fr 1fr 1fr; }
+  .filter-group.wide { grid-column: auto; }
+  .filter-group.actions { grid-column: auto; justify-content: flex-start; align-items: flex-end; }
+  .stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .stat-val { font-size: 24px; }
+  .search-wrap input { width: 200px; }
+  .toast { left: auto; right: 24px; bottom: 24px; text-align: left; max-width: 360px; }
+}
+
+/* ── DESKTOP ── */
+@media (min-width: 900px) {
+  .main { padding: 24px 20px 48px; }
+  .header { padding: 0 24px; }
+  .header-title { font-size: 15px; }
+  .filter-bar { grid-template-columns: minmax(180px,1fr) 80px 1fr 1fr 1fr auto; align-items: end; }
+  .filter-group.wide { grid-column: auto; }
+  .filter-group.actions { grid-column: auto; }
+  .stat-val { font-size: 26px; }
+  .table-topbar { flex-wrap: nowrap; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="header-logo">IN</div>
+    <div style="min-width:0">
+      <div class="header-title">INEC IReV Results Dashboard</div>
+      <div class="header-subtitle" id="electionLabel">2025 Anambra Governorship Election</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="live-pill"><span class="live-dot"></span>Live</span>
+    <span class="sync-info" id="syncInfo" style="display:none">Synced</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- FILTERS -->
+  <div class="filter-bar">
+    <div class="filter-group wide" id="grpElectionId">
+      <span class="filter-label">Election ID</span>
+      <input class="filter-input" id="electionIdInput"
+        value="68fbd8c9f2b7c78fc9917c22"
+        placeholder="Paste election ID"
+        style="font-family:'DM Mono',monospace;font-size:11px">
+    </div>
+    <div class="filter-group" id="grpStateId">
+      <span class="filter-label">State ID</span>
+      <input class="filter-input" id="stateIdInput" value="4" placeholder="State">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">LGA</span>
+      <select id="lgaFilter" onchange="onLgaChange()"><option value="">All LGAs</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Ward</span>
+      <select id="wardFilter" onchange="applyFilters()"><option value="">All Wards</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Status</span>
+      <select id="statusFilter" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="uploaded">Uploaded</option>
+        <option value="pending">Pending</option>
+      </select>
+    </div>
+    <div class="filter-group actions">
+      <button class="btn btn-outline" onclick="resetFilters()">Reset</button>
+      <button class="btn btn-primary" id="fetchBtn" onclick="startFetch()">&#11015; Fetch</button>
+    </div>
+  </div>
+
+  <!-- ACTIVE FILTER CHIPS -->
+  <div class="active-filters" id="activeFilters"></div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon blue">&#127963;</div>
+      <div class="stat-label">Total PUs</div>
+      <div class="stat-val blue" id="statTotal">&#8212;</div>
+      <div class="stat-sub" id="statElection">&#8212;</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">&#9989;</div>
+      <div class="stat-label">Uploaded</div>
+      <div class="stat-val green" id="statUploaded">&#8212;</div>
+      <div class="stat-sub" id="statPct">&#8212;</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon amber">&#9203;</div>
+      <div class="stat-label">Pending</div>
+      <div class="stat-val amber" id="statPending">&#8212;</div>
+      <div class="stat-sub">Not yet submitted</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue">&#128203;</div>
+      <div class="stat-label">Loaded</div>
+      <div class="stat-val blue" id="statLoaded">&#8212;</div>
+      <div class="stat-sub">From IReV</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-card">
+    <div class="progress-head">
+      <span class="progress-title">Upload progress</span>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-labels">
+      <span id="progressLeft">0 uploaded</span>
+      <span id="progressRight">0 expected</span>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-topbar">
+      <div class="table-topbar-title" id="tableTitle">Polling Unit Results</div>
+      <div class="table-topbar-right">
+        <div class="search-wrap">
+          <span class="search-icon">&#128269;</span>
+          <input type="text" id="searchInput" placeholder="Search PU name or code&#8230;" oninput="applyFilters()">
+        </div>
+        <button class="btn btn-outline" onclick="exportCSV()" style="padding:7px 12px">&#11015; CSV</button>
+      </div>
+    </div>
+
+    <div id="tableContainer">
+      <div class="state-box">
+        <div class="icon">&#128202;</div>
+        <h3>Ready to fetch</h3>
+        <p>Click "Fetch" above to load Anambra polling unit data from IReV.</p>
+      </div>
+    </div>
+
+    <div class="pagination" id="paginationBar" style="display:none">
+      <span class="pagination-info" id="pageInfo"></span>
+      <div class="page-btns" id="pageBtns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Result image</span>
+      <button class="modal-close" onclick="closeModalDirect()">&#x2715;</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <div class="img-loading">Loading image&#8230;</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE = 'https://dolphin-app-sleqh.ondigitalocean.app/api/v1';
+const ROWS_PER_PAGE = 50;
+
+let allPUs = [];
+let filteredPUs = [];
+let currentPage = 1;
+
+// lgaIndex: docId -> { name, mongoId, docId }
+// wardIndex: wardId -> { name, lgaDocId }
+// lgaWards: docId -> [ {wardId, wardName} ]
+let lgaIndex = {};
+let lgaWards = {}; // lgaDocId -> [{wardId, wardName}]
+
+async function apiGet(path) {
+  const res = await fetch(BASE + '/' + path, { headers: { Accept: 'application/json' } });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return (await res.json()).data || [];
+}
+
+async function startFetch() {
+  const electionId = document.getElementById('electionIdInput').value.trim();
+  const stateId    = document.getElementById('stateIdInput').value.trim();
+  if (!electionId || !stateId) { showToast('Please fill in Election ID and State ID'); return; }
+
+  const btn = document.getElementById('fetchBtn');
+  btn.disabled = true; btn.textContent = 'Loading...';
+  allPUs = []; lgaIndex = {}; lgaWards = {};
+
+  showLoading();
+
+  try {
+    // Stats
+    const sr = await fetch(BASE + '/elections/' + electionId + '/result/stats', { headers: { Accept: 'application/json' } });
+    if (sr.ok) { const s = (await sr.json()).data || {}; updateStats(s.pus || 0, s.documents || 0); }
+
+    // LGAs
+    const lgas = await apiGet('elections/' + electionId + '/lga/state/' + stateId);
+    if (!lgas.length) throw new Error('No LGAs found. Check State ID.');
+
+    // Build LGA dropdown & index
+    const lgaSel = document.getElementById('lgaFilter');
+    lgaSel.innerHTML = '<option value="">All LGAs</option>';
+    lgas.forEach(l => {
+      const name  = l.lga ? l.lga.name : (l.name || '');
+      const mongId= l.lga ? l.lga._id  : l._id;
+      const docId = l._id;
+      lgaIndex[docId] = { name, mongoId: mongId, docId };
+      lgaWards[docId] = [];
+      const opt = document.createElement('option');
+      opt.value = docId; opt.textContent = name;
+      lgaSel.appendChild(opt);
+    });
+
+    document.getElementById('tableTitle').textContent = 'Loading — 0 of ' + lgas.length + ' LGAs';
+
+    let count = 0;
+    for (const lgaObj of lgas) {
+      const lgaName   = lgaObj.lga ? lgaObj.lga.name : (lgaObj.name || '');
+      const lgaMongoId= lgaObj.lga ? lgaObj.lga._id  : lgaObj._id;
+      const lgaDocId  = lgaObj._id;
+
+      let wards = lgaObj.wards || [];
+      if (!wards.length) {
+        try {
+          const fresh = await apiGet('elections/' + electionId + '/lga/' + lgaMongoId);
+          if (fresh && fresh.wards) wards = fresh.wards;
+          else if (Array.isArray(fresh)) wards = fresh;
+        } catch(e) {}
+      }
+
+      for (const ward of wards) {
+        const wardName = ward.name || '';
+        const wardId   = ward._id  || '';
+
+        // Store ward under its LGA
+        lgaWards[lgaDocId].push({ wardId, wardName });
+
+        try {
+          const pus = await apiGet('elections/' + electionId + '/pus?ward=' + wardId);
+          pus.forEach(pu => {
+            allPUs.push({
+              lga: lgaName, lgaDocId,
+              ward: wardName, wardId,
+              code: pu.pu_code || pu.code || '',
+              name: pu.name || '',
+              imgUrl: getImgUrl(pu),
+              uploadedAt: getUploadTime(pu)
+            });
+          });
+        } catch(e) {}
+      }
+
+      count++;
+      document.getElementById('tableTitle').textContent = 'Loading — ' + count + ' of ' + lgas.length + ' LGAs';
+    }
+
+    document.getElementById('statLoaded').textContent = allPUs.length.toLocaleString();
+    document.getElementById('statElection').textContent = 'Anambra 2025 Gov.';
+    // Store global total for restore when filters cleared
+    document.getElementById('statTotal').dataset.global = allPUs.length.toLocaleString();
+    document.getElementById('syncInfo').textContent = 'Synced ' + new Date().toLocaleTimeString();
+    document.getElementById('syncInfo').style.display = '';
+
+    // Reset ward dropdown to "All"
+    document.getElementById('wardFilter').innerHTML = '<option value="">All Wards</option>';
+    applyFilters();
+    showToast('Loaded ' + allPUs.length.toLocaleString() + ' polling units');
+
+  } catch(err) {
+    showError(err.message);
+    showToast('Error: ' + err.message);
+  }
+
+  btn.disabled = false; btn.innerHTML = '&#11015; Fetch';
+}
+
+// ── CASCADING LGA → WARD ────────────────────────────────
+function onLgaChange() {
+  const lgaDocId = document.getElementById('lgaFilter').value;
+  const wardSel  = document.getElementById('wardFilter');
+  wardSel.innerHTML = '<option value="">All Wards</option>';
+
+  if (lgaDocId && lgaWards[lgaDocId]) {
+    // Show only wards that belong to the selected LGA
+    const seen = {};
+    lgaWards[lgaDocId].forEach(function(w) {
+      if (!seen[w.wardId]) {
+        seen[w.wardId] = true;
+        const opt = document.createElement('option');
+        opt.value = w.wardId; opt.textContent = w.wardName;
+        wardSel.appendChild(opt);
+      }
+    });
+  }
+  // If no LGA selected, ward stays as "All Wards" (no options — any ward allowed)
+  applyFilters();
+}
+
+// ── FILTERING ───────────────────────────────────────────
+function applyFilters() {
+  const lgaDocId   = document.getElementById('lgaFilter').value;
+  const wardId     = document.getElementById('wardFilter').value;
+  const status     = document.getElementById('statusFilter').value;
+  const search     = document.getElementById('searchInput').value.trim().toLowerCase();
+
+  filteredPUs = allPUs.filter(function(pu) {
+    if (lgaDocId && pu.lgaDocId !== lgaDocId) return false;
+    if (wardId   && pu.wardId   !== wardId)   return false;
+    if (status === 'uploaded' && !pu.imgUrl)  return false;
+    if (status === 'pending'  &&  pu.imgUrl)  return false;
+    if (search && pu.name.toLowerCase().indexOf(search) < 0 && pu.code.toLowerCase().indexOf(search) < 0) return false;
+    return true;
+  });
+
+  currentPage = 1;
+  renderActiveChips(lgaDocId, wardId, status, search);
+  updateFilteredStats();
+  renderTable();
+}
+
+function updateFilteredStats() {
+  var isFiltered = filteredPUs.length !== allPUs.length;
+  var total    = filteredPUs.length;
+  var uploaded = filteredPUs.filter(function(p) { return !!p.imgUrl; }).length;
+  var pending  = total - uploaded;
+  var pct      = total ? Math.round(uploaded / total * 100) : 0;
+
+  document.getElementById('statLoaded').textContent    = total.toLocaleString();
+  document.getElementById('statUploaded').textContent  = uploaded.toLocaleString();
+  document.getElementById('statPending').textContent   = pending.toLocaleString();
+  document.getElementById('statPct').textContent       = pct + '% complete';
+  document.getElementById('progressPct').textContent   = pct + '%';
+  document.getElementById('progressFill').style.width  = pct + '%';
+  document.getElementById('progressLeft').textContent  = uploaded.toLocaleString() + ' uploaded';
+  document.getElementById('progressRight').textContent = total.toLocaleString() + (isFiltered ? ' matching' : ' expected');
+
+  // Update total card label
+  document.getElementById('statTotal').textContent = isFiltered
+    ? total.toLocaleString()
+    : (document.getElementById('statTotal').dataset.global || total.toLocaleString());
+  document.getElementById('statElection').textContent = isFiltered
+    ? 'Filtered results'
+    : 'Anambra 2025 Gov.';
+}
+
+function renderActiveChips(lgaDocId, wardId, status, search) {
+  const el = document.getElementById('activeFilters');
+  el.innerHTML = '';
+  if (!lgaDocId && !wardId && !status && !search) return;
+
+  function chip(label, clearFn) {
+    const d = document.createElement('div');
+    d.className = 'filter-chip';
+    d.innerHTML = label + ' <button onclick="' + clearFn + '" title="Remove">&#x2715;</button>';
+    el.appendChild(d);
+  }
+  if (lgaDocId) {
+    const name = lgaIndex[lgaDocId] ? lgaIndex[lgaDocId].name : lgaDocId;
+    chip('LGA: ' + name, 'clearFilter("lga")');
+  }
+  if (wardId) chip('Ward: ' + document.getElementById('wardFilter').options[document.getElementById('wardFilter').selectedIndex].text, 'clearFilter("ward")');
+  if (status) chip('Status: ' + status, 'clearFilter("status")');
+  if (search) chip('Search: ' + search, 'clearFilter("search")');
+}
+
+function clearFilter(type) {
+  if (type === 'lga') {
+    document.getElementById('lgaFilter').value = '';
+    document.getElementById('wardFilter').innerHTML = '<option value="">All Wards</option>';
+  }
+  if (type === 'ward')   document.getElementById('wardFilter').value   = '';
+  if (type === 'status') document.getElementById('statusFilter').value = '';
+  if (type === 'search') document.getElementById('searchInput').value  = '';
+  applyFilters();
+}
+
+function resetFilters() {
+  document.getElementById('lgaFilter').value   = '';
+  document.getElementById('wardFilter').innerHTML = '<option value="">All Wards</option>';
+  document.getElementById('statusFilter').value = '';
+  document.getElementById('searchInput').value  = '';
+  applyFilters();
+}
+
+// ── TABLE ───────────────────────────────────────────────
+function renderTable() {
+  const container = document.getElementById('tableContainer');
+  const total = filteredPUs.length;
+
+  if (!total) {
+    const msg = allPUs.length > 0 ? 'No results match your filters.' : 'Click Fetch to load data.';
+    container.innerHTML = '<div class="state-box"><div class="icon">&#128269;</div><h3>No results found</h3><p>' + msg + '</p></div>';
+    document.getElementById('paginationBar').style.display = 'none';
+    document.getElementById('tableTitle').textContent = '0 polling units';
+    return;
+  }
+
+  const start = (currentPage - 1) * ROWS_PER_PAGE;
+  const page  = filteredPUs.slice(start, start + ROWS_PER_PAGE);
+
+  let html = '<div class="table-scroll"><table><thead><tr><th>#</th><th>LGA</th><th>Ward</th><th>PU Code</th><th>PU Name</th><th>Status</th><th>Result</th></tr></thead><tbody>';
+
+  page.forEach(function(pu, i) {
+    const n   = start + i + 1;
+    const has = !!pu.imgUrl;
+    const pill= has ? '<span class="pill pill-ok">&#10003; Uploaded</span>' : '<span class="pill pill-wait">&#9203; Pending</span>';
+    const btn = has
+      ? '<button class="view-btn" onclick="openModal(\'' + encodeURIComponent(pu.imgUrl) + '\',\'' + encodeURIComponent(pu.name) + '\')">View</button>'
+      : '<span class="td-muted">&#8212;</span>';
+    html += '<tr><td class="td-muted">' + n + '</td><td class="td-lga">' + pu.lga + '</td><td class="td-muted">' + pu.ward + '</td><td class="td-code">' + pu.code + '</td><td>' + pu.name + '</td><td>' + pill + '</td><td>' + btn + '</td></tr>';
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+  document.getElementById('tableTitle').textContent = total.toLocaleString() + ' polling units';
+  renderPagination(total);
+}
+
+function renderPagination(total) {
+  const totalPages = Math.ceil(total / ROWS_PER_PAGE);
+  const bar = document.getElementById('paginationBar');
+  bar.style.display = 'flex';
+
+  const s = Math.min((currentPage - 1) * ROWS_PER_PAGE + 1, total);
+  const e = Math.min(currentPage * ROWS_PER_PAGE, total);
+  document.getElementById('pageInfo').textContent = s + '\u2013' + e + ' of ' + total.toLocaleString();
+
+  const btnsEl = document.getElementById('pageBtns');
+  btnsEl.innerHTML = '';
+
+  function addBtn(label, pg, disabled, active) {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (active ? ' active' : '');
+    b.textContent = label; b.disabled = disabled;
+    b.onclick = function() { currentPage = pg; renderTable(); window.scrollTo(0,0); };
+    btnsEl.appendChild(b);
+  }
+
+  addBtn('\u2039', currentPage - 1, currentPage === 1, false);
+  getPageRange(currentPage, totalPages).forEach(function(p) {
+    if (p === '...') { var s = document.createElement('span'); s.textContent = '\u2026'; s.style.cssText = 'padding:5px 4px;color:var(--text-muted);font-size:12px'; btnsEl.appendChild(s); }
+    else addBtn(p, p, false, p === currentPage);
+  });
+  addBtn('\u203a', currentPage + 1, currentPage === totalPages, false);
+}
+
+function getPageRange(cur, total) {
+  if (total <= 7) { var a = []; for (var i=1;i<=total;i++) a.push(i); return a; }
+  if (cur <= 4)  return [1,2,3,4,5,'...',total];
+  if (cur >= total-3) return [1,'...',total-4,total-3,total-2,total-1,total];
+  return [1,'...',cur-1,cur,cur+1,'...',total];
+}
+
+// ── STATS ───────────────────────────────────────────────
+function updateStats(expected, docs) {
+  const pct = expected ? Math.round(docs / expected * 100) : 0;
+  document.getElementById('statTotal').textContent    = expected.toLocaleString();
+  document.getElementById('statUploaded').textContent = docs.toLocaleString();
+  document.getElementById('statPending').textContent  = (expected - docs).toLocaleString();
+  document.getElementById('statPct').textContent      = pct + '% complete';
+  document.getElementById('progressPct').textContent  = pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLeft').textContent  = docs.toLocaleString() + ' uploaded';
+  document.getElementById('progressRight').textContent = expected.toLocaleString() + ' expected';
+}
+
+// ── HELPERS ─────────────────────────────────────────────
+function getImgUrl(pu) { var d = pu.document || {}; return d.url || d.link || pu.document_url || pu.result_url || ''; }
+function getUploadTime(pu) { var d = pu.document || {}; var t = d.updated_at || d.created_at || ''; return t ? new Date(t).toLocaleString() : ''; }
+
+function openModal(eu, en) {
+  var url = decodeURIComponent(eu), name = decodeURIComponent(en);
+  document.getElementById('modalTitle').textContent = name;
+  document.getElementById('modalBody').innerHTML = '<div class="img-loading"><div class="spinner"></div>Loading result image&#8230;</div>';
+  document.getElementById('modalBg').classList.add('open');
+  var img = new Image();
+  img.onload = function() { document.getElementById('modalBody').innerHTML = ''; img.style.cssText = 'display:block;max-width:100%;height:auto'; document.getElementById('modalBody').appendChild(img); };
+  img.onerror = function() { document.getElementById('modalBody').innerHTML = '<div class="img-loading">Could not load.<br><a href="' + url + '" target="_blank" style="color:var(--navy)">Open directly &#8599;</a></div>'; };
+  img.src = url;
+}
+function closeModal(e) { if (e.target === document.getElementById('modalBg')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('modalBg').classList.remove('open'); document.getElementById('modalBody').innerHTML = ''; }
+
+function showLoading() {
+  document.getElementById('tableContainer').innerHTML = '<div class="state-box"><div class="spinner"></div><h3>Fetching from IReV&#8230;</h3><p>Walking through LGAs, wards and polling units. This takes 1&#8211;2 minutes.</p></div>';
+  document.getElementById('paginationBar').style.display = 'none';
+}
+function showError(msg) { document.getElementById('tableContainer').innerHTML = '<div class="state-box"><div class="icon">&#10060;</div><h3>Could not load data</h3><p>' + msg + '</p></div>'; }
+
+function exportCSV() {
+  if (!filteredPUs.length) { showToast('No data to export'); return; }
+  var header = ['LGA','Ward','PU Code','PU Name','Status','Uploaded At','Image URL'];
+  var rows = filteredPUs.map(function(p) { return [p.lga, p.ward, p.code, '"' + p.name + '"', p.imgUrl ? 'Uploaded' : 'Pending', p.uploadedAt, p.imgUrl]; });
+  var csv = [header].concat(rows).map(function(r) { return r.join(','); }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'inec_results_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('CSV exported!');
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModalDirect(); });
+</script>
+</body>
+</html>
